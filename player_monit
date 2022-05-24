@@ -1,0 +1,61 @@
+#!/bin/bash
+##Potaje6
+#Script for monitoring Players in HLL Servers
+
+EXEC_DIR=$(dirname $0)
+EXEC_NAME=$(basename $0)
+#TEMP_DIR=$EXEC_DIR/tmp
+SERVER_URL="https://my.wonderful.rcon.server
+SERVER_NAME=Server1
+HIST_FILE=$EXEC_DIR/history_${SERVER_NAME}
+#TEMP_FILE=$TEMP_DIR/${SERVER_NAME}.tmp
+TEMP_FILE=$EXEC_DIR/${SERVER_NAME}.tmp
+DATE=$(date +"%Y/%m/%d-%H:%M")
+GRAPH=0
+
+print_uso(){
+cat <<EOF
+        Usage:
+        ./$EXEC_NAME [ -u rcon url (something like https://my.cool.rcon.com) -s server name to display in discord ]
+EOF
+exit
+}
+
+
+#if [ $# -eq 0 ];then
+#	print_uso
+#fi
+
+while [ $# -gt 0 ];
+do
+	case $1 in
+        -h|--help)     
+        print_uso
+        ;;
+        -u) SERVER_URL=$2
+        shift
+        shift
+        ;;
+        -s) SERVER_NAME=$2
+        HIST_FILE=$EXEC_DIR/history_${SERVER_NAME}
+        TEMP_FILE=$EXEC_DIR/${SERVER_NAME}.tmp
+        shift
+        shift
+        ;;
+        --graph) GRAPH=1
+	shift
+        ;;
+        *) break
+        ;;
+    esac
+done
+
+if [ $GRAPH -eq 1 ]; then
+    gnuplot -e "filename1='history_Server1'; filename2='history_Server2'; filename3='history_Server3'; width=2000; height=1000; server1='server1'; server2='server2'; server3='server3'; titulo='haha arty go brr'" script.plot
+    exit
+fi
+
+curl -s "$SERVER_URL/api/public_info" -o $TEMP_FILE
+#parse it and get the amount of players
+PLAYERS=$(jq -c '.result | {player_count}'  $TEMP_FILE | sed 's/{"player_count":"//' | sed 's/"}//')
+echo "${DATE},${PLAYERS}" >> $HIST_FILE
